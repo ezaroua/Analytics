@@ -1,7 +1,14 @@
 import "./App.css";
+import HomePage from './modules/pages/HomePage';
 
-const App = () => {
-  return <h1>Il faut coder le site</h1>;
-};
+function App() {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <HomePage />
+    </div>
+  );
+}
 
 export default App;
+
+

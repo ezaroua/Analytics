@@ -4,15 +4,11 @@ import boto3
 import base64
 import os
 import tempfile
-from dotenv import load_dotenv
-
-load_dotenv()
-BUCKET_NAME = os.environ['BUCKET_NAME']
 
 def lambda_handler_parser(event, context):
     try:
-        s3Service = S3Service(BUCKET_NAME)
-        file_key = event['Records'][0]['s3']['object']['key'];
+        s3Service = S3Service("csv-analyzer-bucket")
+        file_key = event['Records'][0]['s3']['object']['key']
         file = s3Service.get_file(file_key)
         # Récupération du fichier CSV encodé en base64 depuis l'event
         file_content = base64.b64decode(file['Body'])  # Supposons que le contenu encodé est dans 'body'

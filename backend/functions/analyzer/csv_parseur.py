@@ -12,19 +12,13 @@ class CSVProductParseur :
     def load_products(self) : 
         with open(self.path, 'r',encoding="ISO-8859-1") as csv_file : 
             reader = csv_lib.DictReader(csv_file)
-            FIRST_RUN = 0
-            list_index = 0
             for row in reader :
-                if(list_index == FIRST_RUN):
-                    list_index + 1
-                    next
-            else :
                 product = ProductModel(
-                    id=row["ID"],
-                    name=row["Nom"],
-                    price=row["Prix"],
-                    quantity=row["Quantite"],
-                    note=row["Note_Client"]
+                    id=int(row["ID"]),
+                    name=str(row["Nom"]),
+                    price=float(row["Prix"]),
+                    quantity=int(row["Quantite"]),
+                    note=float(row["Note_Client"])
                 )
                 self.products.append(product)
         

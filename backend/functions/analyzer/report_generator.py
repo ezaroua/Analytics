@@ -9,7 +9,7 @@ from models.product_model import ProductModel, ProductModelOnError
 class ReportGenerator:
     
     def __init__(self, path) :
-        self.path : String  = path
+        self.path : str = path
         self.analyzer = CSVAnalyzer(path) 
         self.analyzed_price : AnalyzedPrice = None
         self.analyzed_quantity : AnalyzedQuantity = None
@@ -29,17 +29,16 @@ class ReportGenerator:
         print("that goes here")
         # Generate Report
         report = {
-            "products": [product.to_dict() for product in self.products],
-            "products_on_error": [product.to_dict() for product in self.products_on_error],
+            "products_on_error": [product.to_dict() for product in self.analyzer.products_on_error],
             "analyzed_results": {
-                "price": self.analyzed_price.to_dict() if self.analyzed_price else None,
-                "quantity": self.analyzed_quantity.to_dict() if self.analyzed_quantity else None,
-                "note": self.analyzed_note.to_dict() if self.analyzed_note else None
+                "price": self.analyzer.analyzed_price.to_dict(),
+                "quantity": self.analyzer.analyzed_quantity.to_dict(),
+                "note": self.analyzer.analyzed_note.to_dict()
             }
         } 
         
         return json.dumps(report, indent=4)        
     
-report_generator = ReportGenerator("backend/functions/analyzer/data/data_normal.csv")
+report_generator = ReportGenerator("backend/functions/analyzer/data/data_aberrant.csv")
 json_report = report_generator.generate_report()
 print(json_report)

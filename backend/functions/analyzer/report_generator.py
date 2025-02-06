@@ -41,6 +41,3 @@ class ReportGenerator:
         
         return json.dumps(report, indent=4)        
     
-report_generator = ReportGenerator("/home/cedric/Téléchargements/data_aberrant.csv")
-json_report = report_generator.generate_report()
-print(json_report)

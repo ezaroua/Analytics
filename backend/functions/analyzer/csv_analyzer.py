@@ -19,11 +19,9 @@ class CSVAnalyzer :
         self.analyze_price()
         self.analyze_quantity()
         self.analyze_note()
-        print("analyzeddd")
 
     
     def verify_compliance(self):
-        
         is_compliant = True
         for product in self.products :
             if self.verify_products_compliance(product) :
@@ -33,8 +31,7 @@ class CSVAnalyzer :
         return is_compliant 
         
     def verify_products_compliance(self, product):
-        for product in self.products :
-            self.verify_product_field_compliance(product)
+        self.verify_product_field_compliance(product)    
         
         if self.products_on_error == []:
             return True
@@ -70,12 +67,12 @@ class CSVAnalyzer :
     def analyze_price(self):
         prices = []
         for product in self.products :
-            if(self.is_id_contained_in_products_on_error(product.ID)):
+            if not self.is_id_contained_in_products_on_error(product.ID):
                 next
             else :
-                print(product.Prix)
                 prices.append(product.Prix)
                 prices.sort()
+                print(prices)
         average_price = sum(prices) / len(prices)
         median_price = prices[len(prices) // 2]
         gap_on_price = prices[len(prices) - 1] - prices[0]
@@ -84,7 +81,7 @@ class CSVAnalyzer :
     def analyze_quantity(self):
         quantities = []
         for product in self.products :
-            if(self.is_id_contained_in_products_on_error(product.ID)):
+            if not self.is_id_contained_in_products_on_error(product.ID):
                 next
             else :
                 quantities.append(product.Quantité)
@@ -97,7 +94,7 @@ class CSVAnalyzer :
     def analyze_note(self):
         notes = []
         for product in self.products :
-            if(self.is_id_contained_in_products_on_error(product.ID)):
+            if not self.is_id_contained_in_products_on_error(product.ID):
                 next
             else :
                 notes.append(product.Note_Client)

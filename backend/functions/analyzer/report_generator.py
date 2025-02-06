@@ -40,6 +40,6 @@ class ReportGenerator:
         
         return json.dumps(report, indent=4)        
     
-report_generator = ReportGenerator("/home/cedric/Téléchargements/data_aberrant.csv")
+report_generator = ReportGenerator("backend/functions/analyzer/data/data_normal.csv")
 json_report = report_generator.generate_report()
 print(json_report)

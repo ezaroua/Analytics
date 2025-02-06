@@ -37,8 +37,4 @@ class ReportGenerator:
             }
         } 
         
-        return json.dumps(report, indent=4)        
-    
-report_generator = ReportGenerator("backend/functions/analyzer/data/data_aberrant.csv")
-json_report = report_generator.generate_report()
-print(json_report)
+        return json.dumps(report, indent=4)

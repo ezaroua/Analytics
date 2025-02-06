@@ -1,51 +1,37 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
-
-Description: SAM template for CSV Analysis project
-
-Parameters:
-  Stage:
-    Type: String
-    Default: dev
-    AllowedValues:
-      - dev
-      - prod
-    Description: Stage/Environment for the stack
+Description: SAM template for CSV Analyzer project
 
 Globals:
   Function:
+    Timeout: 30
     Runtime: python3.9
-    Timeout: 60
     MemorySize: 256
     Environment:
       Variables:
-        STAGE: !Ref Stage
-        POWERTOOLS_SERVICE_NAME: csv-analyzer
-        POWERTOOLS_LOGGER_LOG_EVENT: true
+        STORAGE_BUCKET: !Ref StorageBucket
+        ANALYSIS_TABLE: !Ref AnalysisTable
+        # NOTIFICATION_TOPIC: !Ref NotificationTopic
 
 Resources:
-  # S3 Bucket for CSV files
-  UploadBucket:
+  # S3 Bucket for storing CSV files and analysis results
+  StorageBucket:
     Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
-      BucketName: !Sub "${AWS::StackName}-uploads-${Stage}"
       CorsConfiguration:
         CorsRules:
           - AllowedHeaders: ["*"]
-            AllowedMethods: [GET, PUT, POST]
-            AllowedOrigins: ["*"] # Restrict this in production
+            AllowedMethods: [GET, PUT, POST, DELETE, HEAD]
+            AllowedOrigins: ["*"]
             MaxAge: 3000
-      LifecycleConfiguration:
-        Rules:
-          - Id: DeleteOldFiles
-            Status: Enabled
-            ExpirationInDays: 30
 
-  # DynamoDB Table for analysis results
+  # DynamoDB Table for storing analysis results
   AnalysisTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub "${AWS::StackName}-analysis-${Stage}"
+      BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: fileId
           AttributeType: S
@@ -56,132 +42,128 @@ Resources:
           KeyType: HASH
         - AttributeName: timestamp
           KeyType: RANGE
-      BillingMode: PAY_PER_REQUEST
-      TimeToLiveSpecification:
-        AttributeName: ttl
-        Enabled: true
+
+  # SNS Topic for notifications
+  # NotificationTopic:
+  #   Type: AWS::SNS::Topic
+  #   Properties:
+  #     DisplayName: CSVAnalyzerNotifications
+
+  # Lambda Functions
+  FileProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/functions/file_processor/
+      Handler: app.lambda_handler
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref StorageBucket
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AnalysisTable
+      #   - SNSPublishMessagePolicy:
+      #       TopicName: !GetAtt NotificationTopic.TopicName
+      # Environment:
+      #   Variables:
+      #     NOTIFICATION_TOPIC_ARN: !Ref NotificationTopic
 
   # API Gateway
   ApiGateway:
     Type: AWS::Serverless::Api
     Properties:
-      StageName: !Ref Stage
+      StageName: prod
       Cors:
-        AllowMethods: "'GET,POST,OPTIONS'"
-        AllowHeaders: "'Content-Type,Authorization'"
+        AllowMethods: "'*'"
+        AllowHeaders: "'*'"
         AllowOrigin: "'*'"
-      Auth:
-        ApiKeyRequired: false
 
-  # Lambda Functions
-  # 1. API Handler Lambda
-  ApiFunction:
+  ApiHandlerFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: src/functions/api_handler/
       Handler: app.lambda_handler
-      Description: API Handler for CSV Analyzer
       Policies:
         - S3CrudPolicy:
-            BucketName: !Ref UploadBucket
+            BucketName: !Ref StorageBucket
         - DynamoDBCrudPolicy:
             TableName: !Ref AnalysisTable
-      Environment:
-        Variables:
-          UPLOAD_BUCKET: !Ref UploadBucket
-          ANALYSIS_TABLE: !Ref AnalysisTable
       Events:
-        GetAnalyses:
+        GetAllAnalyses:
           Type: Api
           Properties:
             RestApiId: !Ref ApiGateway
             Path: /analyses
             Method: GET
-        GetAnalysis:
+        GetAnalysisById:
           Type: Api
           Properties:
             RestApiId: !Ref ApiGateway
             Path: /analyses/{fileId}
             Method: GET
-        GetUploadUrl:
+        UploadFile:
           Type: Api
           Properties:
             RestApiId: !Ref ApiGateway
             Path: /upload
             Method: POST
 
-  # 2. CSV Processor Lambda
-  ProcessorFunction:
+  # S3 Event Configuration
+  NotificationConfigFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: src/functions/file_processor/
       Handler: app.lambda_handler
-      Description: CSV File Processor
       Policies:
-        - S3ReadPolicy:
-            BucketName: !Ref UploadBucket
-        - DynamoDBCrudPolicy:
-            TableName: !Ref AnalysisTable
-      Environment:
-        Variables:
-          UPLOAD_BUCKET: !Ref UploadBucket
-          ANALYSIS_TABLE: !Ref AnalysisTable
-      Events:
-        S3Upload:
-          Type: S3
-          Properties:
-            Bucket: !Ref UploadBucket
-            Events: s3:ObjectCreated:*
+        - S3CrudPolicy:
+            BucketName: !Ref StorageBucket
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action: s3:PutBucketNotification
+              Resource: !GetAtt StorageBucket.Arn
+      InlineCode: |
+        import boto3
+        import cfnresponse
+        def lambda_handler(event, context):
+            try:
+                if event['RequestType'] in ['Create', 'Update']:
+                    s3 = boto3.client('s3')
+                    bucket = event['ResourceProperties']['BucketName']
+                    function_arn = event['ResourceProperties']['LambdaArn']
 
-  # Bucket Policy
-  BucketPolicy:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      Bucket: !Ref UploadBucket
-      PolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Sid: AllowLambdaAccess
-            Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action:
-              - s3:GetObject
-            Resource: !Sub "${UploadBucket.Arn}/*"
-          - Sid: AllowAPIGatewayAccess
-            Effect: Allow
-            Principal:
-              Service: apigateway.amazonaws.com
-            Action:
-              - s3:GetObject
-              - s3:PutObject
-            Resource: !Sub "${UploadBucket.Arn}/*"
+                    notification_config = {
+                        'LambdaFunctionConfigurations': [
+                            {
+                                'LambdaFunctionArn': function_arn,
+                                'Events': ['s3:ObjectCreated:*'],
+                                'Filter': {
+                                    'Key': {
+                                        'FilterRules': [
+                                            {
+                                                'Name': 'suffix',
+                                                'Value': '.csv'
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                    s3.put_bucket_notification_configuration(
+                        Bucket=bucket,
+                        NotificationConfiguration=notification_config
+                    )
+                cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+            except Exception as e:
+                cfnresponse.send(event, context, cfnresponse.FAILED, {'Error': str(e)})
 
 Outputs:
-  ApiEndpoint:
-    Description: "API Gateway endpoint URL"
-    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Stage}"
+  ApiUrl:
+    Description: API Gateway endpoint URL
+    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/prod/"
 
-  UploadBucketName:
-    Description: "S3 bucket for file uploads"
-    Value: !Ref UploadBucket
+  BucketName:
+    Description: S3 Bucket for file storage
+    Value: !Ref StorageBucket
 
-  UploadBucketArn:
-    Description: "S3 bucket ARN"
-    Value: !GetAtt UploadBucket.Arn
-
-  AnalysisTableName:
-    Description: "DynamoDB table name"
-    Value: !Ref AnalysisTable
-
-  AnalysisTableArn:
-    Description: "DynamoDB table ARN"
-    Value: !GetAtt AnalysisTable.Arn
-
-  ApiHandlerFunction:
-    Description: "API Handler Lambda Function ARN"
-    Value: !GetAtt ApiFunction.Arn
-
-  ProcessorFunction:
-    Description: "CSV Processor Lambda Function ARN"
-    Value: !GetAtt ProcessorFunction.Arn
+  # NotificationTopicArn:
+  #   Description: SNS Topic ARN for notifications
+  #   Value: !Ref NotificationTopic

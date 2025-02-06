@@ -4,6 +4,7 @@ import logging
 from http import HTTPStatus
 from typing import Dict, Any
 from datetime import datetime
+import uuid
 from utils.response_handler import create_response
 from utils.http_method import HttpMethod
 from services.s3_service import S3Service
@@ -27,11 +28,11 @@ def get_upload_url(event: Dict[str, Any]) -> Dict[str, Any]:
             )
 
         # ! Generate unique ID
-        uuid = uuid.uuid4()
+        generated_uuid = uuid.uuid4()
 
         # ! Create safe filename with unique prefix
         safe_file_name = os.path.basename(file_name)
-        unique_key = f"{uuid}/{safe_file_name}"
+        unique_key = f"{generated_uuid}/{safe_file_name}"
 
         if url := s3_service.generate_presigned_url(unique_key):
             return create_response(

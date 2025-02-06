@@ -1,15 +1,15 @@
-import {Progress, Upload, Card, Typography, Row, Col, Alert} from "antd";
 import {
-  InboxOutlined,
   FileTextOutlined,
+  InboxOutlined,
   LoadingOutlined,
 } from "@ant-design/icons";
-import {useState} from "react";
-import {useFileUpload} from "../../../shared/hooks/useAnalysis.hook";
-import {StatsCard} from "../dashboard/StatCard";
+import { Alert, Card, Col, Progress, Row, Typography, Upload } from "antd";
+import { useState } from "react";
+import { useFileUpload } from "../../../shared/hooks/useAnalysis.hook";
+import { StatsCard } from "../dashboard/StatCard";
 
-const {Title, Text} = Typography;
-const {Dragger} = Upload;
+const { Title, Text } = Typography;
+const { Dragger } = Upload;
 
 export const FileUploadPage = () => {
   const [uploadProgress, setUploadProgress] = useState<number>(0);

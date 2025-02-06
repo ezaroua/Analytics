@@ -1,6 +1,6 @@
 import axios, { HttpStatusCode, type AxiosError } from "axios";
 
-const BASE_URL = import.meta.env.VITE_API_URL;
+const BASE_URL = 'https://yt8y945sd0.execute-api.eu-west-1.amazonaws.com/Stage';
 
 console.log("BASE_URL", BASE_URL);
 

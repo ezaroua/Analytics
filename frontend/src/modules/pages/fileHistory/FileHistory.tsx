@@ -1,133 +1,95 @@
 import {
-  Card,
-  Table,
-  DatePicker,
-  Input,
-  Select,
-  Button,
-  Row,
-  Col,
-  Statistic,
-  Space,
-  Tag,
-} from "antd";
-import {
-  SearchOutlined,
   DeleteOutlined,
-  RedoOutlined,
   DownloadOutlined,
+  RedoOutlined,
 } from "@ant-design/icons";
+import {
+  Button,
+  Card,
+  Space,
+  Table,
+  Tag
+} from "antd";
+import { useEffect, useState } from "react";
 
-const {RangePicker} = DatePicker;
+interface ProductError {
+  ID: number;
+  Nom: string;
+  Prix: number;
+  Quantite: number;
+  Note_Client: number;
+  error_message: string;
+}
 
-export const FileHistoryPage = () => {
-  return (
-    <div className="flex flex-col gap-2">
-      <FilterSection />
-      <StatisticsPanel />
-      <HistoryTable />
-    </div>
-  );
+const mockData = {
+  products_on_error: [
+    {
+      ID: 1,
+      Nom: "Produit_1",
+      Prix: 193.52,
+      Quantite: 32,
+      Note_Client: 1.1,
+      error_message: "Invalid value type 1",
+    },
+    {
+      ID: 3,
+      Nom: "Produit_3",
+      Prix: 368.68,
+      Quantite: 49,
+      Note_Client: 1.9,
+      error_message: "Invalid value type 3",
+    },
+    {
+      ID: 5,
+      Nom: "Produit_5",
+      Prix: 86.45,
+      Quantite: 4,
+      Note_Client: 1.7,
+      error_message: "Invalid value type 5",
+    },
+  ],
 };
 
-const FilterSection = () => (
-  <Card>
-    <div className="space-y-4">
-      <Row gutter={[16, 16]}>
-        <Col span={8}>
-          <RangePicker className="w-full" />
-        </Col>
-        <Col span={6}>
-          <Select
-            placeholder="Status"
-            className="w-full"
-            options={[
-              {value: "completed", label: "Completed"},
-              {value: "processing", label: "Processing"},
-              {value: "failed", label: "Failed"},
-            ]}
-          />
-        </Col>
-        <Col span={6}>
-          <Select
-            placeholder="Anomaly Type"
-            className="w-full"
-            mode="multiple"
-            options={[
-              {value: "price", label: "Price"},
-              {value: "quantity", label: "Quantity"},
-              {value: "rating", label: "Rating"},
-            ]}
-          />
-        </Col>
-        <Col span={4}>
-          <Input placeholder="Search files" prefix={<SearchOutlined />} />
-        </Col>
-      </Row>
-    </div>
-  </Card>
-);
-
-const StatisticsPanel = () => (
-  <Row gutter={16}>
-    <Col span={8}>
-      <Card>
-        <Statistic
-          title="Success Rate"
-          value={98.5}
-          suffix="%"
-          valueStyle={{color: "#3f8600"}}
-        />
-      </Card>
-    </Col>
-    <Col span={8}>
-      <Card>
-        <Statistic title="Average Processing Time" value={2.5} suffix="min" />
-      </Card>
-    </Col>
-    <Col span={8}>
-      <Card>
-        <Statistic title="Storage Used" value={75} suffix="%" />
-      </Card>
-    </Col>
-  </Row>
-);
-
 const HistoryTable = () => {
+  const [data, setData] = useState<ProductError[]>([]);
+
+  useEffect(() => {
+    setData(mockData.products_on_error);
+  }, []);
+
   const columns = [
     {
-      title: "File Name",
-      dataIndex: "fileName",
-      sorter: true,
+      title: "ID",
+      dataIndex: "ID",
+      key: "ID",
     },
     {
-      title: "Upload Date",
-      dataIndex: "uploadDate",
-      sorter: true,
+      title: "Nom",
+      dataIndex: "Nom",
+      key: "Nom",
     },
     {
-      title: "Status",
-      dataIndex: "status",
-      render: (status: string) => (
-        <Tag
-          color={
-            status === "Completed"
-              ? "success"
-              : status === "Processing"
-                ? "processing"
-                : "error"
-          }
-        >
-          {status}
-        </Tag>
-      ),
+      title: "Prix",
+      dataIndex: "Prix",
+      key: "Prix",
+      render: (price: number) => `€${price.toFixed(2)}`,
     },
     {
-      title: "Anomalies",
-      dataIndex: "anomalies",
-      render: (count: number) => (
-        <Tag color={count > 0 ? "warning" : "success"}>{count}</Tag>
-      ),
+      title: "Quantité",
+      dataIndex: "Quantite",
+      key: "Quantite",
+    },
+    {
+      title: "Note Client",
+      dataIndex: "Note_Client",
+      key: "Note_Client",
+      render: (note: number) => <Tag color={note < 2 ? "orange" : "green"}>{note}</Tag>,
+    },
+    {
+      title: "Erreur",
+      dataIndex: "error_message",
+      key: "error_message",
+      render: (msg: string) => <Tag color="red">{msg}</Tag>,
     },
     {
       title: "Actions",
@@ -155,12 +117,9 @@ const HistoryTable = () => {
           <Button icon={<RedoOutlined />}>Reprocess Selected</Button>
         </Space>
       </div>
-      <Table
-        columns={columns}
-        rowSelection={{
-          type: "checkbox",
-        }}
-      />
+      <Table columns={columns} dataSource={data} rowKey="ID" />
     </Card>
   );
 };
+
+export default HistoryTable;

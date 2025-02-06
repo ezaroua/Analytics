@@ -1,12 +1,13 @@
-import {createBrowserRouter} from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom";
+import { AnalysisPage } from "../../modules/pages/analysis/AnalysisPage";
+import { Dashboard } from "../../modules/pages/dashboard/Dashboard";
+import { DashboardLayout } from "../../modules/pages/dashboard/DashboardLayout";
+import FileHistoryPage from "../../modules/pages/fileHistory/FileHistory";
+import { FileUploadPage } from "../../modules/pages/fileUpload/FileUploadPage";
+
+import { NotificationSettingsPage } from "../../modules/pages/notifications/NotificationSettingsPage";
 import NotFoundPage from "../pages/NotFoundPage";
 import UnauthorizedPage from "../pages/UnauthorizedPage";
-import {DashboardLayout} from "../../modules/pages/dashboard/DashboardLayout";
-import {Dashboard} from "../../modules/pages/dashboard/Dashboard";
-import {FileUploadPage} from "../../modules/pages/fileUpload/FileUploadPage";
-import {FileHistoryPage} from "../../modules/pages/fileHistory/FileHistory";
-import {AnalysisPage} from "../../modules/pages/analysis/AnalysisPage";
-import {NotificationSettingsPage} from "../../modules/pages/notifications/NotificationSettingsPage";
 
 export const ROUTE_PATH = {
   // ! Main public routes

@@ -18,7 +18,7 @@ class ReportGenerator:
         self.product = []
         
 
-    def generate_report(self):
+    def generate_report(self, file_key):
         # Perform Analysis
         self.analyzer.analyze()
         self.analyzed_price = self.analyzer.analyzed_price
@@ -29,6 +29,7 @@ class ReportGenerator:
         print("that goes here")
         # Generate Report
         report = {
+            "file_id": file_key,
             "products_on_error": [product.to_dict() for product in self.analyzer.products_on_error],
             "analyzed_results": {
                 "price": self.analyzer.analyzed_price.to_dict(),

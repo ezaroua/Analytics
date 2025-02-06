@@ -19,6 +19,7 @@ class CSVAnalyzer :
         self.analyze_price()
         self.analyze_quantity()
         self.analyze_note()
+        
 
     def verify_compliance(self):
         for product in self.products :

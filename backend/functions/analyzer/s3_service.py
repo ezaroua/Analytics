@@ -9,22 +9,6 @@ class S3Service:
         self.bucket_name = bucket_name
         self.logger = logging.getLogger(__name__)
 
-    def generate_presigned_url(self, file_key: str, expiration: int = 3600) -> Optional[str]:
-        """Generate a presigned URL for file upload"""
-        try:
-            return self.s3.generate_presigned_url(
-                'put_object',
-                Params={
-                    'Bucket': self.bucket_name,
-                    'Key': file_key,
-                    'ContentType': 'text/csv',
-                },
-                ExpiresIn=expiration,
-            )
-        except ClientError as e:
-            self.logger.error(f"Error generating presigned URL: {e}")
-            return None
-
     def get_file(self, file_key: str) -> Optional[Dict[str, Any]]:
         """Get file from S3"""
         try:

@@ -1,4 +1,5 @@
 from report_generator import ReportGenerator
+from s3_service import S3Service
 import boto3
 import base64
 import os
@@ -6,13 +7,15 @@ import tempfile
 from dotenv import load_dotenv
 
 load_dotenv()
-s3 = boto3.client('s3')
 BUCKET_NAME = os.environ['BUCKET_NAME']
 
-def lambda_handler(event, context):
+def lambda_handler_parser(event, context):
     try:
+        s3Service = S3Service(BUCKET_NAME)
+        file_key = event['Records'][0]['s3']['object']['key'];
+        file = s3Service.get_file(file_key)
         # Récupération du fichier CSV encodé en base64 depuis l'event
-        file_content = base64.b64decode(event['body'])  # Supposons que le contenu encodé est dans 'body'
+        file_content = base64.b64decode(file['Body'])  # Supposons que le contenu encodé est dans 'body'
         
         # Crée un fichier temporaire pour stocker le CSV
         with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as temp_csv:
@@ -21,7 +24,7 @@ def lambda_handler(event, context):
         
         # Initialiser le ReportGenerator avec le fichier temporaire
         report_generator = ReportGenerator(temp_csv_path)
-        json_report = report_generator.generate_report()
+        json_report = report_generator.generate_report(file_key)
         
         print(json_report)
         

@@ -13,7 +13,7 @@ class DynamoDBService:
         self.logger = logging.getLogger(__name__)
 
     def save_analysis(
-        self, file_id: str, analysis_data: Dict[str, Any], status: str = "COMPLETED"
+        self, file_id: str, analysis_data: str, status: str = "COMPLETED"
     ) -> bool:
         """Save analysis results to DynamoDB"""
         try:

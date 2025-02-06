@@ -3,8 +3,6 @@ import json
 from csv_analyzer import CSVAnalyzer
 from models.analyzed_result_model import (AnalyzedNote, AnalyzedPrice,
                                           AnalyzedQuantity)
-from models.product_model import ProductModel, ProductModelOnError
-
 
 class ReportGenerator:
     
@@ -29,7 +27,6 @@ class ReportGenerator:
         print("that goes here")
         # Generate Report
         report = {
-            "file_id": file_key,
             "products_on_error": [product.to_dict() for product in self.analyzer.products_on_error],
             "analyzed_results": {
                 "price": self.analyzer.analyzed_price.to_dict(),

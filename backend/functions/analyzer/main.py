@@ -6,12 +6,12 @@ import os
 import tempfile
 from dotenv import load_dotenv
 
-load_dotenv()
-BUCKET_NAME = os.environ['BUCKET_NAME']
+from .dynamo_service import DynamoDBService
 
 def lambda_handler_parser(event, context):
     try:
-        s3Service = S3Service(BUCKET_NAME)
+        dynamo_service = DynamoDBService("csv-analyzer-AnalysisTable-17KBIMQ0RAT64")
+        s3Service = S3Service("csv-analyzer-bucket")
         file_key = event['Records'][0]['s3']['object']['key'];
         file = s3Service.get_file(file_key)
         # Récupération du fichier CSV encodé en base64 depuis l'event
@@ -26,7 +26,7 @@ def lambda_handler_parser(event, context):
         report_generator = ReportGenerator(temp_csv_path)
         json_report = report_generator.generate_report(file_key)
         
-        print(json_report)
+        dynamo_service.save_analysis(file_id=file_key, analysis_data=json_report)
         
         return {
             "statusCode": 200,

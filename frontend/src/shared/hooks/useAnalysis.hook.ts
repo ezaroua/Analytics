@@ -32,11 +32,11 @@ export const useFileUpload = () => {
 			file: File;
 			onProgress?: (progress: number) => void;
 		}) => {
-			const uploadUrl = await AnalysisApi.getUploadUrl(file.name);
+			const { uploadUrl, fileId } = await AnalysisApi.getUploadUrl(file.name);
 			await AnalysisApi.uploadFile(uploadUrl, file, onProgress);
+			return { fileId };
 		},
 		onSuccess: () => {
-			// Invalidate and refetch analyses after successful upload
 			queryClient.invalidateQueries({ queryKey: analysisQueryKeys.all });
 		},
 	});

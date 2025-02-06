@@ -1,128 +1,85 @@
-# import json
-# import os
-# import boto3
-# import logging
-# from typing import Dict, Any
-# from datetime import datetime
-# from botocore.exceptions import ClientError
-
-# from datetime import timezone
-# from utils.response_handler import create_response
-# from utils.http_method import HttpMethod
-
-# # ! Initialize AWS clients
-# s3 = boto3.client('s3')
-# dynamodb = boto3.resource('dynamodb')
-# table = dynamodb.Table(os.environ['ANALYSIS_TABLE'])
-# bucket_name = os.environ['UPLOAD_BUCKET']
-
-# # ! Configure logging
-# logger = logging.getLogger()
-# logger.setLevel(logging.INFO)
-
-
-
-# def get_upload_url() -> Dict[str, Any]:
-#     """Generate a pre-signed URL for S3 upload"""
-#     try:
-#         file_id = f"upload_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
-#         url = s3.generate_presigned_url(
-#             'put_object',
-#             Params={
-#                 'Bucket': bucket_name,
-#                 'Key': f"{file_id}.csv",
-#                 'ContentType': 'text/csv'
-#             },
-#             ExpiresIn=3600
-#         )
-#         return create_response(200, {
-#             'uploadUrl': url,
-#             'fileId': file_id
-#         })
-#     except Exception as e:
-#         logger.error(f"Error generating upload URL: {str(e)}")
-#         return create_response(500, {'error': 'Error generating upload URL'})
-
-# def get_analyses() -> Dict[str, Any]:
-#     """List all analyses"""
-#     try:
-#         response = table.scan()
-#         return create_response(200, {
-#             'analyses': response.get('Items', [])
-#         })
-#     except Exception as e:
-#         logger.error(f"Error fetching analyses: {str(e)}")
-#         return create_response(500, {'error': 'Error fetching analyses'})
-
-# def get_analysis(file_id: str) -> Dict[str, Any]:
-#     """Get a specific analysis result"""
-#     try:
-#         response = table.query(
-#             KeyConditionExpression='fileId = :fileId',
-#             ExpressionAttributeValues={':fileId': file_id}
-#         )
-#         if response.get('Items'):
-#             return create_response(200, {
-#                 'analysis': response['Items'][0]
-#             })
-#         return create_response(404, {'error': 'Analysis not found'})
-#     except Exception as e:
-#         logger.error(f"Error fetching analysis: {str(e)}")
-#         return create_response(500, {'error': 'Error fetching analysis'})
-
 import json
-
-import json
+import os
 import logging
+from http import HTTPStatus
 from typing import Dict, Any
+from datetime import datetime
+from utils.response_handler import create_response
+from utils.http_method import HttpMethod
+from services.s3_service import S3Service
+from services.dynamo_service import DynamoDBService
 
-# Set up logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+s3_service = S3Service("csv-analyzer-bucket")  # TODO: USE ENV VAR
+dynamo_service = DynamoDBService("csv-analyzer-AnalysisTable-17KBIMQ0RAT64")
+
+
+def get_upload_url(event: Dict[str, Any]) -> Dict[str, Any]:
+   try:
+       body = json.loads(event.get("body", "{}"))
+       file_name = body.get("fileName")
+
+       if not file_name:
+           return create_response(HTTPStatus.BAD_REQUEST, {"error": "Missing fileName"})
+
+       # ! Generate unique file ID
+       file_id = f"upload_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+
+       # ! Create safe filename with unique prefix
+       safe_file_name = os.path.basename(file_name)
+       unique_key = f"{file_id}/{safe_file_name}"
+
+       if url := s3_service.generate_presigned_url(unique_key):
+           return create_response(HTTPStatus.OK, {
+               "uploadUrl": url,
+               "fileId": file_id,
+               "fileName": safe_file_name
+           })
+
+       return create_response(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": "URL generation failed"})
+
+   except json.JSONDecodeError:
+       return create_response(HTTPStatus.BAD_REQUEST, {"error": "Invalid JSON"})
+
+
+def get_analyses() -> Dict[str, Any]:
+    analyses = dynamo_service.list_analyses()
+    return create_response(HTTPStatus.OK, {"analyses": analyses})
+
+
+def get_analysis(file_id: str) -> Dict[str, Any]:
+    if analysis := dynamo_service.get_analysis(file_id):
+        return create_response(HTTPStatus.OK, {"analysis": analysis})
+    else:
+        return create_response(HTTPStatus.NOT_FOUND, {"error": "Analysis not found"})
+
+
 def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
-    """Main Lambda handler"""
+    logger.info("Received event: %s", json.dumps(event))
+
+    http_method = event.get("httpMethod")
+    path = event.get("path")
+
+
+    print(f"HTTP Method: {http_method}")
+    print(f"Path: {path}")
+    print("http_method == HttpMethod.POST", http_method == HttpMethod.POST)
+    print("path == /upload", path == "/upload")
+
     try:
-        # Log the incoming event
-        logger.info("Received event: %s", json.dumps(event))
+        if http_method == HttpMethod.POST.value and path == "/upload":
+            print("UPLOADING FILE")
+            return get_upload_url(event)  # Pass event to extract fileName
+        elif http_method == HttpMethod.GET.value and path == "/analyses":
+            print("ANALYSES")
+            return get_analyses()
+        elif http_method == HttpMethod.GET.value and path.startswith("/analyses/"):
+            print("ANALYSIS/ID")
+            return get_analysis(path.split("/")[-1])
 
-        print("Hello from the API!")
-        # http_method = event.get('httpMethod')
-        # path = event.get('path')
-
-        return {
-            'statusCode': 200,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
-            'body': json.dumps({'message': 'Hello from the API!'})
-        }
+        return create_response(HTTPStatus.NOT_FOUND, {"error": "Not found"})
     except Exception as e:
-        logger.error("Error occurred: %s", str(e), exc_info=True)
-        return {
-            'statusCode': 500,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
-            'body': json.dumps({
-                'error': 'Internal server error',
-                'message': str(e)
-            })
-        }
-
-    # Route requests to appropriate handlers
-    # try:
-    #     if http_method == HttpMethod.POST and path == '/upload':
-    #         return get_upload_url()
-    #     elif http_method == HttpMethod.GET and path == '/analyses':
-    #         return get_analyses()
-    #     elif http_method == HttpMethod.GET and path.startswith('/analyses/'):
-    #         file_id = path.split('/')[-1]
-    #         return get_analysis(file_id)
-    #     else:
-    #         return create_response(404, {'error': 'Not found'})
-    # except Exception as e:
-    #     logger.error(f"Error processing request: {str(e)}")
-    #     return create_response(500, {'error': 'Internal server error'})
+        logger.error(f"Error processing request: {str(e)}")
+        return create_response(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": "Internal server error"})

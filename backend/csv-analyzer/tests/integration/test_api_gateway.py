@@ -38,14 +38,19 @@ class TestApiGateway(TestCase):
             response = client.describe_stacks(StackName=stack_name)
         except Exception as e:
             raise Exception(
-                f"Cannot find stack {stack_name}. \n" f'Please make sure stack with the name "{stack_name}" exists.'
+                f"Cannot find stack {stack_name}. \n"
+                f'Please make sure stack with the name "{stack_name}" exists.'
             ) from e
 
         stacks = response["Stacks"]
 
         stack_outputs = stacks[0]["Outputs"]
-        api_outputs = [output for output in stack_outputs if output["OutputKey"] == "WebEndpoint"]
-        self.assertTrue(api_outputs, f"Cannot find output HelloWorldApi in stack {stack_name}")
+        api_outputs = [
+            output for output in stack_outputs if output["OutputKey"] == "WebEndpoint"
+        ]
+        self.assertTrue(
+            api_outputs, f"Cannot find output HelloWorldApi in stack {stack_name}"
+        )
 
         self.api_endpoint = api_outputs[0]["OutputValue"]
 
@@ -53,14 +58,24 @@ class TestApiGateway(TestCase):
         """
         Call the API Gateway endpoint and check the response
         """
-        response = requests.post(self.api_endpoint, data=json.dumps({"id": "id1", "name": "name1"}))
+        response = requests.post(
+            self.api_endpoint, data=json.dumps({"id": "id1", "name": "name1"})
+        )
         self.assertEqual(response.json()["ResponseMetadata"]["HTTPStatusCode"], 200)
 
-        response = requests.post(self.api_endpoint, data=json.dumps({"id": "id2", "name": "name2"}))
+        response = requests.post(
+            self.api_endpoint, data=json.dumps({"id": "id2", "name": "name2"})
+        )
         self.assertEqual(response.json()["ResponseMetadata"]["HTTPStatusCode"], 200)
 
         response = requests.get(self.api_endpoint, params=json.dumps({"id": "id1"}))
         self.assertEqual(response.json()[0]["name"], {"S": "name1"})
 
         response = requests.get(self.api_endpoint)
-        self.assertEqual(response.json(), [{'id': {'S': 'id1'}, 'name': {'S': 'name1'}}, {'id': {'S': 'id2'}, 'name': {'S': 'name2'}}])
+        self.assertEqual(
+            response.json(),
+            [
+                {"id": {"S": "id1"}, "name": {"S": "name1"}},
+                {"id": {"S": "id2"}, "name": {"S": "name2"}},
+            ],
+        )

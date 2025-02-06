@@ -13,9 +13,11 @@ export const AnalysisApi = {
 		return response.data;
 	},
 
-	getUploadUrl: async (filename: string): Promise<string> => {
-		const response = await apiV1.post("/upload", { filename });
-		return response.data.uploadUrl;
+	getUploadUrl: async (
+		fileName: string,
+	): Promise<{ uploadUrl: string; fileId: string }> => {
+		const response = await apiV1.post("/upload", { fileName });
+		return response.data;
 	},
 
 	// * Upload file using presigned URL with progress tracking
@@ -24,7 +26,6 @@ export const AnalysisApi = {
 		file: File,
 		onProgress?: (progressEvent: number) => void,
 	): Promise<void> => {
-		// * Using axios directly for more control over the upload
 		await axios.put(url, file, {
 			headers: {
 				"Content-Type": "text/csv",

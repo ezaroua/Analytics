@@ -17,6 +17,7 @@ export const FileUploadPage = () => {
   const uploadMutation = useFileUpload();
 
   const handleUpload = async (file: File) => {
+    console.log("Uploading file:", file);
     setSelectedFile(file);
     try {
       await uploadMutation.mutateAsync({
@@ -56,7 +57,7 @@ export const FileUploadPage = () => {
         </Col>
       </Row>
 
-      <Card className="shadow-sm hover:shadow-md transition-shadow">
+      <Card className="shadow-sm hover:shadow-md transition-shadow flex flex-col gap-4">
         <Dragger
           beforeUpload={async (file) => {
             await handleUpload(file);

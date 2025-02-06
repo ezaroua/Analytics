@@ -43,7 +43,7 @@
 #         }
 #         table.put_item(Item=item)
 #     except Exception as e:
-#         logger.error(f"Error saving analysis results: {str(e)}")
+#         logger.error(f"Err saving analysis results: {str(e)}")
 #         raise
 
 # def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
@@ -125,10 +125,10 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     # path = event['path']
 
     return {
-        'statusCode': 200,
-        'headers': {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
+        "statusCode": 200,
+        "headers": {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
         },
-        'body': json.dumps({'message': 'Hello from the API!'})
+        "body": json.dumps({"message": "Hello from the API!"}),
     }

@@ -1,6 +1,8 @@
 import axios, { HttpStatusCode, type AxiosError } from "axios";
 
-const BASE_URL = "http://localhost:8080"; // TODO: Change this to your API URL WITH AWS
+const BASE_URL = import.meta.env.VITE_API_URL;
+
+console.log("BASE_URL", BASE_URL);
 
 export const apiV1 = axios.create({
 	baseURL: BASE_URL,

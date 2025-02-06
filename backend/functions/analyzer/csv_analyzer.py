@@ -32,7 +32,7 @@ class CSVAnalyzer :
         is_valid = True
         mpoe: ProductModelOnError
         if(isinstance(product.prix, float) or isinstance(product.quantite, int) or isinstance(product.note_client, float)):
-            mpoe = ProductModelOnError(product.ID, product.nom, product.prix, product.quantite, product.note_client, f"Invalid value type {product.ID}")
+            mpoe = ProductModelOnError(product.ID, product.nom, product.prix, product.quantite, product.note_client, f"Invalid value type for prix or quantité or note_client {product.ID}")
             self.products_on_error.append(mpoe)
             is_valid = False
         if product.prix < 0 or product.prix > 500:

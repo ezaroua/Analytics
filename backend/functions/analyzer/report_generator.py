@@ -3,8 +3,7 @@ import json
 from csv_analyzer import CSVAnalyzer
 from models.analyzed_result_model import (AnalyzedNote, AnalyzedPrice,
                                           AnalyzedQuantity)
-from models.product_model import Product
-from models.product_on_error_model import ProductOnError
+from models.product_model import ProductModel, ProductModelOnError
 
 
 class ReportGenerator:
@@ -27,7 +26,7 @@ class ReportGenerator:
         self.analyzed_note = self.analyzer.analyzed_note
         self.products_on_error = self.analyzer.products_on_error
         self.products = self.analyzer.products
-        
+        print("that goes here")
         # Generate Report
         report = {
             "products": [product.to_dict() for product in self.products],
@@ -41,3 +40,6 @@ class ReportGenerator:
         
         return json.dumps(report, indent=4)        
     
+report_generator = ReportGenerator("/home/cedric/Téléchargements/data_aberrant.csv")
+json_report = report_generator.generate_report()
+print(json_report)

@@ -1,12 +1,12 @@
 
-from product_model import ProductModel, ProductModelOnError
-
-from .analyzed_result_model import AnalyzedNote, AnalyzedQuantity, AnayzedPrice
+from .analyzed_result_model import (AnalyzedNote, AnalyzedPrice,
+                                    AnalyzedQuantity)
+from .product_model import ProductModel, ProductModelOnError
 
 __all__ = [
     'ProductModel',
     'ProductModelOnError',
-    'AnayzedPrice',
+    'AnalyzedPrice',
     'AnalyzedQuantity',
     'AnalyzedNote'
 ]

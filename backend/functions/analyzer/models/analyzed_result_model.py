@@ -1,4 +1,4 @@
-class AnayzedPrice:
+class AnalyzedPrice:
     def __init__(self, average_price, median_price, gap_on_price):
         self.average_price = Number
         self.median_price = Number

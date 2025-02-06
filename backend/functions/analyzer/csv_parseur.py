@@ -6,11 +6,11 @@ from models.product_model import ProductModel
 class CSVProductParseur : 
     def __init__(self, path) : 
         self.path = path
-        products = []
+        self.products = []
         self.load_products()
         
     def load_products(self) : 
-        with open(self.path, 'r') as csv_file : 
+        with open(self.path, 'r',encoding="ISO-8859-1") as csv_file : 
             reader = csv_lib.reader(csv_file)
             for row in reader :
                 product = ProductModel(row[0], row[1], row[2], row[3], row[4])
@@ -18,4 +18,4 @@ class CSVProductParseur :
         
                 
     def get_data(self) : 
-        return self.data
+        return self.products

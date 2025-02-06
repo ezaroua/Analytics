@@ -17,31 +17,34 @@ dynamo_service = DynamoDBService("csv-analyzer-AnalysisTable-17KBIMQ0RAT64")
 
 
 def get_upload_url(event: Dict[str, Any]) -> Dict[str, Any]:
-   try:
-       body = json.loads(event.get("body", "{}"))
-       file_name = body.get("fileName")
+    try:
+        body = json.loads(event.get("body", "{}"))
+        file_name = body.get("fileName")
 
-       if not file_name:
-           return create_response(HTTPStatus.BAD_REQUEST, {"error": "Missing fileName"})
+        if not file_name:
+            return create_response(
+                HTTPStatus.BAD_REQUEST, {"error": "Missing fileName"}
+            )
 
-       # ! Generate unique file ID
-       file_id = f"upload_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        # ! Generate unique ID
+        uuid = uuid.uuid4()
 
-       # ! Create safe filename with unique prefix
-       safe_file_name = os.path.basename(file_name)
-       unique_key = f"{file_id}/{safe_file_name}"
+        # ! Create safe filename with unique prefix
+        safe_file_name = os.path.basename(file_name)
+        unique_key = f"{uuid}/{safe_file_name}"
 
-       if url := s3_service.generate_presigned_url(unique_key):
-           return create_response(HTTPStatus.OK, {
-               "uploadUrl": url,
-               "fileId": file_id,
-               "fileName": safe_file_name
-           })
+        if url := s3_service.generate_presigned_url(unique_key):
+            return create_response(
+                HTTPStatus.OK,
+                {"uploadUrl": url, "fileId": unique_key, "fileName": safe_file_name},
+            )
 
-       return create_response(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": "URL generation failed"})
+        return create_response(
+            HTTPStatus.INTERNAL_SERVER_ERROR, {"error": "URL generation failed"}
+        )
 
-   except json.JSONDecodeError:
-       return create_response(HTTPStatus.BAD_REQUEST, {"error": "Invalid JSON"})
+    except json.JSONDecodeError:
+        return create_response(HTTPStatus.BAD_REQUEST, {"error": "Invalid JSON"})
 
 
 def get_analyses() -> Dict[str, Any]:
@@ -62,7 +65,6 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     http_method = event.get("httpMethod")
     path = event.get("path")
 
-
     print(f"HTTP Method: {http_method}")
     print(f"Path: {path}")
     print("http_method == HttpMethod.POST", http_method == HttpMethod.POST)
@@ -82,4 +84,6 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         return create_response(HTTPStatus.NOT_FOUND, {"error": "Not found"})
     except Exception as e:
         logger.error(f"Error processing request: {str(e)}")
-        return create_response(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": "Internal server error"})
+        return create_response(
+            HTTPStatus.INTERNAL_SERVER_ERROR, {"error": "Internal server error"}
+        )

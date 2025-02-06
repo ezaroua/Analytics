@@ -1,1 +1,18 @@
 @import "tailwindcss";
+
+#root {
+	@apply min-h-screen flex flex-col;
+}
+
+.ant-layout {
+	@apply min-h-screen;
+}
+
+.ant-layout-content {
+	@apply flex-1;
+}
+
+/* For pages */
+.page-container {
+	@apply min-h-full flex flex-col flex-1;
+}

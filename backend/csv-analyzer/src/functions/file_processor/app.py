@@ -108,10 +108,17 @@
 
 import json
 from typing import Dict, Any
+import logging
+
+
+# Configure logging
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
 
 def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """Main Lambda handler"""
-    # logger.info(f"Received event: {json.dumps(event)}")
+    logger.info(f"Received event: {json.dumps(event)}")
 
     print("Hello from the File!")
     # http_method = event['httpMethod']

@@ -1,7 +1,12 @@
 import {createBrowserRouter} from "react-router-dom";
-import App from "../../App";
 import NotFoundPage from "../pages/NotFoundPage";
 import UnauthorizedPage from "../pages/UnauthorizedPage";
+import {DashboardLayout} from "../../modules/pages/dashboard/DashboardLayout";
+import {Dashboard} from "../../modules/pages/dashboard/Dashboard";
+import {FileUploadPage} from "../../modules/pages/fileUpload/FileUploadPage";
+import {FileHistoryPage} from "../../modules/pages/fileHistory/FileHistory";
+import {AnalysisPage} from "../../modules/pages/analysis/AnalysisPage";
+import {NotificationSettingsPage} from "../../modules/pages/notifications/NotificationSettingsPage";
 
 export const ROUTE_PATH = {
   // ! Main public routes
@@ -26,31 +31,34 @@ export const ROUTE_PATH = {
 export const appRoutes = [
   {
     path: ROUTE_PATH.public.HOME,
-    element: <App />,
-    // children: [
-    //   {
-    //     path: ROUTE_PATH.public.DASHBOARD,
-    //     element: <Dashboard />,
-    //   },
-    //   {
-    //     path: ROUTE_PATH.public.FILE_UPLOAD,
-    //     element: <FileUpload />,
-    //   },
-    //   {
-    //     path: ROUTE_PATH.public.ANALYSIS,
-    //     element: <AnalysisResults />,
-    //   },
-    //   {
-    //     path: ROUTE_PATH.public.HISTORY,
-    //     element: <FileHistory />,
-    //   },
-    //   {
-    //     path: ROUTE_PATH.public.NOTIFICATIONS,
-    //     element: <NotificationSettings />,
-    //   },
-    // ],
+    element: <DashboardLayout />,
+    children: [
+      {
+        path: ROUTE_PATH.public.HOME,
+        element: <Dashboard />,
+      },
+      {
+        path: ROUTE_PATH.public.DASHBOARD,
+        element: <Dashboard />,
+      },
+      {
+        path: ROUTE_PATH.public.FILE_UPLOAD,
+        element: <FileUploadPage />,
+      },
+      {
+        path: ROUTE_PATH.public.ANALYSIS,
+        element: <AnalysisPage />,
+      },
+      {
+        path: ROUTE_PATH.public.HISTORY,
+        element: <FileHistoryPage />,
+      },
+      {
+        path: ROUTE_PATH.public.NOTIFICATIONS,
+        element: <NotificationSettingsPage />,
+      },
+    ],
   },
-  // Error routes
   {
     path: ROUTE_PATH.error.UNAUTHORIZED,
     element: <UnauthorizedPage />,

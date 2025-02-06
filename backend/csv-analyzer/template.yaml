@@ -1,0 +1,169 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: SAM template for CSV Analyzer project
+
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: python3.9
+    MemorySize: 256
+    Environment:
+      Variables:
+        STORAGE_BUCKET: !Ref StorageBucket
+        ANALYSIS_TABLE: !Ref AnalysisTable
+        # NOTIFICATION_TOPIC: !Ref NotificationTopic
+
+Resources:
+  # S3 Bucket for storing CSV files and analysis results
+  StorageBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ["*"]
+            AllowedMethods: [GET, PUT, POST, DELETE, HEAD]
+            AllowedOrigins: ["*"]
+            MaxAge: 3000
+
+  # DynamoDB Table for storing analysis results
+  AnalysisTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: fileId
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: S
+      KeySchema:
+        - AttributeName: fileId
+          KeyType: HASH
+        - AttributeName: timestamp
+          KeyType: RANGE
+
+  # SNS Topic for notifications
+  # NotificationTopic:
+  #   Type: AWS::SNS::Topic
+  #   Properties:
+  #     DisplayName: CSVAnalyzerNotifications
+
+  # Lambda Functions
+  FileProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/functions/file_processor/
+      Handler: app.lambda_handler
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref StorageBucket
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AnalysisTable
+      #   - SNSPublishMessagePolicy:
+      #       TopicName: !GetAtt NotificationTopic.TopicName
+      # Environment:
+      #   Variables:
+      #     NOTIFICATION_TOPIC_ARN: !Ref NotificationTopic
+
+  # API Gateway
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Cors:
+        AllowMethods: "'*'"
+        AllowHeaders: "'*'"
+        AllowOrigin: "'*'"
+
+  ApiHandlerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/functions/api_handler/
+      Handler: app.lambda_handler
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref StorageBucket
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AnalysisTable
+      Events:
+        GetAllAnalyses:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /analyses
+            Method: GET
+        GetAnalysisById:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /analyses/{fileId}
+            Method: GET
+        UploadFile:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /upload
+            Method: POST
+
+  # S3 Event Configuration
+  NotificationConfigFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.lambda_handler
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref StorageBucket
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action: s3:PutBucketNotification
+              Resource: !GetAtt StorageBucket.Arn
+      InlineCode: |
+        import boto3
+        import cfnresponse
+        def lambda_handler(event, context):
+            try:
+                if event['RequestType'] in ['Create', 'Update']:
+                    s3 = boto3.client('s3')
+                    bucket = event['ResourceProperties']['BucketName']
+                    function_arn = event['ResourceProperties']['LambdaArn']
+
+                    notification_config = {
+                        'LambdaFunctionConfigurations': [
+                            {
+                                'LambdaFunctionArn': function_arn,
+                                'Events': ['s3:ObjectCreated:*'],
+                                'Filter': {
+                                    'Key': {
+                                        'FilterRules': [
+                                            {
+                                                'Name': 'suffix',
+                                                'Value': '.csv'
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                    s3.put_bucket_notification_configuration(
+                        Bucket=bucket,
+                        NotificationConfiguration=notification_config
+                    )
+                cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+            except Exception as e:
+                cfnresponse.send(event, context, cfnresponse.FAILED, {'Error': str(e)})
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint URL
+    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/prod/"
+
+  BucketName:
+    Description: S3 Bucket for file storage
+    Value: !Ref StorageBucket
+
+  # NotificationTopicArn:
+  #   Description: SNS Topic ARN for notifications
+  #   Value: !Ref NotificationTopic

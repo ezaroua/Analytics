@@ -1,6 +1,8 @@
 import axios, { HttpStatusCode, type AxiosError } from "axios";
 
-const BASE_URL = "http://localhost:8080"; // TODO: Change this to your API URL WITH AWS
+const BASE_URL = 'https://yt8y945sd0.execute-api.eu-west-1.amazonaws.com/Stage';
+
+console.log("BASE_URL", BASE_URL);
 
 export const apiV1 = axios.create({
 	baseURL: BASE_URL,

@@ -6,7 +6,15 @@
     "quickfix.biome": "explicit",
     "source.organizeImports.biome": "explicit"
   },
-  "cSpell.words": ["Geolocate", "mapbox", "sonner", "unclustered", "VITE"],
+  "cSpell.words": [
+    "Geolocate",
+    "iterrows",
+    "mapbox",
+    "Quantite",
+    "sonner",
+    "unclustered",
+    "VITE"
+  ],
   "yaml.customTags": [
     "!Equals sequence",
     "!FindInMap sequence",

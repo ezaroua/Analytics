@@ -5,3 +5,4 @@ pandas==2.2.3
 pydantic==2.10.6
 pydantic_core==2.27.2
 python-dateutil==2.9.0.post0
+chardet==4.0.0

@@ -15,9 +15,10 @@ export const useAnalyses = () => {
 
 export const useAnalysis = (fileId: string) => {
 	return useQuery({
-		enabled: !!fileId,
 		queryKey: analysisQueryKeys.one(fileId),
 		queryFn: () => AnalysisApi.getAnalysis(fileId),
+		retry: 1,
+		enabled: !!fileId,
 	});
 };
 

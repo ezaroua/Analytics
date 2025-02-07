@@ -14,7 +14,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 s3_service = S3Service("csv-analyzer-bucket")  # TODO: USE ENV VAR
-dynamo_service = DynamoDBService("csv-analyzer-AnalysisTable-17KBIMQ0RAT64")
+dynamo_service = DynamoDBService("csv-analyzer-AnalysisTable-1PSRX2YSFU8AB")
 
 
 def get_upload_url(event: Dict[str, Any]) -> Dict[str, Any]:
@@ -32,6 +32,7 @@ def get_upload_url(event: Dict[str, Any]) -> Dict[str, Any]:
 
         # ! Create safe filename with unique prefix
         safe_file_name = os.path.basename(file_name)
+        print(f"safe_file_name: {safe_file_name}")
         unique_key = f"{generated_uuid}/{safe_file_name}"
 
         if url := s3_service.generate_presigned_url(unique_key):
@@ -49,8 +50,8 @@ def get_upload_url(event: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def get_analyses() -> Dict[str, Any]:
-    analyses = dynamo_service.list_analyses()
-    return create_response(HTTPStatus.OK, {"analyses": analyses})
+    result = dynamo_service.list_analyses()
+    return create_response(HTTPStatus.OK, result.dict())
 
 
 def get_analysis(file_id: str) -> Dict[str, Any]:

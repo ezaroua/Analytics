@@ -1,22 +1,22 @@
+import {SearchOutlined} from "@ant-design/icons";
 import {
+  Button,
   Card,
-  Table,
+  Col,
   DatePicker,
   Input,
-  Select,
-  Button,
   Row,
-  Col,
-  Statistic,
+  Select,
   Space,
+  Statistic,
+  Table,
   Tag,
 } from "antd";
-import {
-  SearchOutlined,
-  DeleteOutlined,
-  RedoOutlined,
-  DownloadOutlined,
-} from "@ant-design/icons";
+import {useAnalyses} from "../../../shared/hooks/useAnalysis.hook";
+import type {
+  Analysis,
+  AnalysisStatus,
+} from "../../../shared/models/analysis.model";
 
 const {RangePicker} = DatePicker;
 
@@ -68,54 +68,31 @@ const FilterSection = () => (
   </Card>
 );
 
-const StatisticsPanel = () => (
-  <Row gutter={16}>
-    <Col span={8}>
-      <Card>
-        <Statistic
-          title="Success Rate"
-          value={98.5}
-          suffix="%"
-          valueStyle={{color: "#3f8600"}}
-        />
-      </Card>
-    </Col>
-    <Col span={8}>
-      <Card>
-        <Statistic title="Average Processing Time" value={2.5} suffix="min" />
-      </Card>
-    </Col>
-    <Col span={8}>
-      <Card>
-        <Statistic title="Storage Used" value={75} suffix="%" />
-      </Card>
-    </Col>
-  </Row>
-);
-
 const HistoryTable = () => {
+  const {data, isLoading, error} = useAnalyses();
+
   const columns = [
     {
-      title: "File Name",
-      dataIndex: "fileName",
-      sorter: true,
+      title: "File ID",
+      dataIndex: "fileId",
     },
     {
-      title: "Upload Date",
-      dataIndex: "uploadDate",
-      sorter: true,
+      title: "File Name",
+      dataIndex: ["metadata", "filename"],
     },
     {
       title: "Status",
       dataIndex: "status",
-      render: (status: string) => (
+      render: (status: AnalysisStatus) => (
         <Tag
           color={
-            status === "Completed"
+            status === "COMPLETED"
               ? "success"
-              : status === "Processing"
+              : status === "PROCESSING"
                 ? "processing"
-                : "error"
+                : status === "PENDING"
+                  ? "default"
+                  : "error"
           }
         >
           {status}
@@ -124,7 +101,7 @@ const HistoryTable = () => {
     },
     {
       title: "Anomalies",
-      dataIndex: "anomalies",
+      dataIndex: "anomaly_count",
       render: (count: number) => (
         <Tag color={count > 0 ? "warning" : "success"}>{count}</Tag>
       ),
@@ -132,10 +109,11 @@ const HistoryTable = () => {
     {
       title: "Actions",
       key: "actions",
-      render: () => (
+      render: (_: any, record: Analysis) => (
         <Space>
-          <Button type="link">View</Button>
-          <Button type="link">Download</Button>
+          <Button type="link" href={`/analysis/${record.fileId}`}>
+            View
+          </Button>
           <Button type="link" danger>
             Delete
           </Button>
@@ -144,23 +122,60 @@ const HistoryTable = () => {
     },
   ];
 
+  if (error) {
+    return (
+      <Card>
+        <div className="text-red-500">
+          Error loading analyses: {error.message}
+        </div>
+      </Card>
+    );
+  }
+
   return (
     <Card>
-      <div className="mb-4">
-        <Space>
-          <Button icon={<DownloadOutlined />}>Download Selected</Button>
-          <Button icon={<DeleteOutlined />} danger>
-            Delete Selected
-          </Button>
-          <Button icon={<RedoOutlined />}>Reprocess Selected</Button>
-        </Space>
-      </div>
       <Table
         columns={columns}
-        rowSelection={{
-          type: "checkbox",
-        }}
+        dataSource={data?.items}
+        rowKey="fileId"
+        loading={isLoading}
+        rowSelection={{type: "checkbox"}}
       />
     </Card>
+  );
+};
+
+// Update StatisticsPanel to use real data
+const StatisticsPanel = () => {
+  const {data} = useAnalyses();
+
+  const getSuccessRate = () => {
+    if (!data?.items.length) {
+      return 0;
+    }
+    const completed = data.items.filter(
+      (item) => item.status === "COMPLETED"
+    ).length;
+    return ((completed / data.items.length) * 100).toFixed(1);
+  };
+
+  return (
+    <Row gutter={16}>
+      <Col span={8}>
+        <Card>
+          <Statistic
+            title="Success Rate"
+            value={getSuccessRate()}
+            suffix="%"
+            valueStyle={{color: "#3f8600"}}
+          />
+        </Card>
+      </Col>
+      <Col span={8}>
+        <Card>
+          <Statistic title="Total Files" value={data?.items.length ?? 0} />
+        </Card>
+      </Col>
+    </Row>
   );
 };

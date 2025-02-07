@@ -1,15 +1,22 @@
 import axios from "axios";
 import { apiV1 } from "../core/axios-instance";
-import type { Analysis } from "../models/analysis.model";
+import type {
+	GetAnalysesResponse,
+	GetAnalysisResponse,
+} from "../models/analysis.model";
 
 export const AnalysisApi = {
-	getAnalyses: async (): Promise<Analysis[]> => {
-		const response = await apiV1.get("/analyses");
+	getAnalyses: async (): Promise<GetAnalysesResponse> => {
+		const response = await apiV1.get<GetAnalysesResponse>("/analyses");
 		return response.data;
+		// return GetAnalysesResponseSchema.parse(response.data);
 	},
 
-	getAnalysis: async (fileId: string): Promise<Analysis> => {
-		const response = await apiV1.get(`/analyses/${fileId}`);
+	getAnalysis: async (fileId: string): Promise<GetAnalysisResponse> => {
+		const response = await apiV1.get<GetAnalysisResponse>(
+			`/analyses/${fileId}`,
+		);
+		// return GetAnalysisResponseSchema.parse(response.data);
 		return response.data;
 	},
 

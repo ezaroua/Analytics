@@ -2,7 +2,25 @@ AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: SAM template for CSV Analyzer project
 
+Globals:
+  Function:
+    Runtime: python3.9
+    Timeout: 60
+    MemorySize: 256
+
 Resources:
+  # Processing Layer for pandas and other dependencies
+  ProcessingLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: csv-analyzer-processing-layer
+      Description: Layer for pandas and data processing dependencies
+      ContentUri: layers/processing_layer/
+      CompatibleRuntimes:
+        - python3.9
+    Metadata:
+      BuildMethod: python3.9
+
   # S3 Bucket for storing CSV files and analysis results
   StorageBucket:
     Type: AWS::S3::Bucket
@@ -41,8 +59,18 @@ Resources:
                 Action: s3:*
                 Resource: "*"
               - Effect: Allow
-                Action: dynamodb:*
-                Resource: !GetAtt AnalysisTable.Arn
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:GetItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:BatchGetItem
+                  - dynamodb:BatchWriteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource:
+                  - !GetAtt AnalysisTable.Arn
+                  - !Sub "${AnalysisTable.Arn}/index/*"
 
   AnalysisTable:
     Type: AWS::DynamoDB::Table
@@ -51,19 +79,9 @@ Resources:
       AttributeDefinitions:
         - AttributeName: fileId
           AttributeType: S
-        - AttributeName: timestamp
-          AttributeType: S
       KeySchema:
         - AttributeName: fileId
           KeyType: HASH
-        - AttributeName: timestamp
-          KeyType: RANGE
-
-  # SNS Topic for notifications
-  # NotificationTopic:
-  #   Type: AWS::SNS::Topic
-  #   Properties:
-  #     DisplayName: CSVAnalyzerNotifications
 
   # Lambda Functions
   FileProcessorFunction:
@@ -72,7 +90,8 @@ Resources:
       Role: !GetAtt LambdaExecutionRole.Arn
       CodeUri: src/
       Handler: functions/file_processor/app.lambda_handler
-      Runtime: python3.9
+      Layers:
+        - !Ref ProcessingLayer
       Events:
         FileUploadEvent:
           Type: S3
@@ -100,7 +119,8 @@ Resources:
       Role: !GetAtt LambdaExecutionRole.Arn
       CodeUri: src/
       Handler: functions/api_handler/app.lambda_handler
-      Runtime: python3.9
+      Layers:
+        - !Ref ProcessingLayer
       Events:
         GetAllAnalyses:
           Type: Api
@@ -128,7 +148,3 @@ Outputs:
   BucketName:
     Description: S3 Bucket for file storage
     Value: !Ref StorageBucket
-
-  # NotificationTopicArn:
-  #   Description: SNS Topic ARN for notifications
-  #   Value: !Ref NotificationTopic
